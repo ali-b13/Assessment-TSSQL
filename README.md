@@ -80,4 +80,7 @@ If you were to introduce two more props to plans:
 How would this affect the current plan upgrade calculation?
 
 ### answer here:
----
+
+
+
+ During plan upgrades  these affect the current plan upgrade calculation by considering the default user count and additional user costs. This adjustment ensures more accurate pricing, particularly when users exceed the default user count, therefore providing a clearer and more customized pricing model.
