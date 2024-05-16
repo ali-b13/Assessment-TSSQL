@@ -127,15 +127,16 @@ export const subscriptions = router({
         subscriptionId: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx:{user},input }) => {
       const { subscriptionId } = input;
+      const {userId}=user
 
       try {
         // Create a new entry in subscriptionActivations table
         await db.insert(schema.subscriptionActivations).values({
           subscriptionId: subscriptionId,
-          activationDate: new Date("2024-05-05T20:55:00.000Z"), // Convert activationDate to Date object
-          expirationDate: new Date("2024-06-05T20:55:00.000Z"),
+          activationDate: new Date(), // Convert activationDate to Date object
+          expirationDate: subscriptionTime(),
         });
 
         // Update the corresponding subscription in subscriptions table to set isActive to true
