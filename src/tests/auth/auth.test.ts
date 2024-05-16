@@ -4,13 +4,15 @@ import { createCaller } from "../helpers/utils";
 import { eq } from "drizzle-orm";
 import { trpcError } from "../../trpc/core";
 import resetDb from "../helpers/resetDb";
+// import resetDb from "../helpers/resetDb";
 
 describe("auth routes", async () => {
-  beforeAll(async () => {
-    await resetDb();
-  });
+  beforeAll(async()=>{
+   await  resetDb()
+  })
   describe("register", async () => {
     const user = {
+      id: 1,
       email: "mail@mail.com",
       password: "P@ssw0rd",
       name: "test",
@@ -19,11 +21,14 @@ describe("auth routes", async () => {
     };
     it("should create user successfully", async () => {
       const user = {
+        id: 1,
         email: "mail@mail.com",
         password: "P@ssw0rd",
         name: "test",
         timezone: "Asia/Riyadh",
         locale: "en",
+
+        isAdmin: true,
       };
       const registeredUserRes = await createCaller({}).auth.register(user);
       expect(registeredUserRes.success).toBe(true);
@@ -50,6 +55,7 @@ describe("auth routes", async () => {
   });
   describe("login", async () => {
     const user = {
+      id: 1,
       email: "mail@mail.com",
       password: "P@ssw0rd",
       rememberMe: true,
@@ -66,6 +72,7 @@ describe("auth routes", async () => {
         .update(schema.users)
         .set({ emailVerified: true })
         .where(eq(schema.users.email, "mail@mail.com"));
+
       const loginResponse = await createCaller({
         res: { setCookie: () => {} },
       }).auth.login(user);

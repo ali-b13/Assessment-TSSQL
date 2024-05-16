@@ -16,6 +16,7 @@ describe("account routes", async () => {
       name: "test",
       timezone: "Asia/Riyadh",
       locale: "en",
+      isAdmin:true
     };
     it("should return the current user", async () => {
       await createCaller({}).auth.register(user);

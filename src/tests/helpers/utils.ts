@@ -32,14 +32,25 @@ export const createAuthenticatedCaller = ({ userId }: { userId: number }) => {
   });
 };
 
+
 type User = {
   email: string;
   password: string;
   name: string;
   timezone: string;
   locale: string;
+  isAdmin:boolean;
 };
-export const setupUser = async (user: User) => {
+export const setupUser = async () => {
+  const user = {
+    email: "mail@mail.com",
+    password: "P@ssw0rd",
+    name: "test",
+    timezone: "Asia/Riyadh",
+    locale: "en",
+
+    isAdmin: true,
+  };
   //register user
   await createCaller({}).auth.register(user);
   const userInDb = await db.query.users.findFirst({
@@ -64,3 +75,18 @@ export const setupUser = async (user: User) => {
 
   return { teamId, calendarSlug: authenticatedUser };
 };
+
+
+export type SubscriptionType={
+ subscription:{
+  userId:number,
+  teamId:number,
+  planId:number,
+  price:string,
+  isActive:boolean,
+  startDate:Date,
+  endDate:Date
+ },
+ success:boolean
+
+}

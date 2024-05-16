@@ -4,46 +4,51 @@ import { schema, db } from "../../db/client";
 import { eq, and } from "drizzle-orm";
 
 export const teams = router({
-  getOne: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.number(),
-      })
-    )
-    .query(async ({ input }) => {
-      const { teamId } = input;
-      const team = await db.query.teams.findFirst({
-        where: eq(schema.teams.id, teamId),
-      });
-
-      if (!team) {
-        throw new trpcError({
-          code: "NOT_FOUND",
-          message: "Team not found",
-        });
-      }
-      return team;
-    }),
-  get: protectedProcedure.query(async ({ ctx: { user } }) => {
+  getOne: protectedProcedure.query(async ({ ctx: { user } }) => {
     const { userId } = user;
-    try {
-      const teams = await db.query.teams.findMany({
-        where: eq(schema.teams.userId, userId),
-      });
+    const team = await db.query.teams.findFirst({
+      where: eq(schema.teams.userId, userId),
+    });
 
-      return teams;
-    } catch (error) {
-      console.error("Error fetching teams", error);
-      return [];
+    if (!team) {
+      throw new trpcError({
+        code: "NOT_FOUND",
+      });
     }
+    return {
+      success: true,
+      team: team,
+    };
   }),
+
   create: protectedProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ ctx: { user }, input }) => {
       const { userId } = user;
+      console.log(userId, "userId");
       const { name } = input;
       try {
-        await db
+        const userRecord = await db.query.users.findFirst({
+          where: eq(schema.users.id, userId),
+        });
+        console.log(userRecord, "user record");
+        if (!userRecord) {
+          throw new trpcError({
+            code: "NOT_FOUND",
+            message: "USER_NOT_FOUND ",
+          });
+        }
+        const teamRecord = await db.query.teams.findFirst({
+          where: eq(schema.teams.userId, userRecord.id),
+        });
+        console.log(teamRecord, "team record now");
+        if (teamRecord) {
+          throw new trpcError({
+            code: "BAD_REQUEST",
+            message: "TEAM_ALREADY_EXISTS",
+          });
+        }
+        const team = await db
           .insert(schema.teams)
           .values({
             createdAt: new Date(),
@@ -53,36 +58,90 @@ export const teams = router({
             isPersonal: false,
           })
           .returning();
-        const user = await db.query.users.findFirst({
-          where: eq(schema.users.id, userId),
+
+        console.log(team, "team");
+
+        return {
+          success: true,
+          team: team[0],
+        };
+      } catch (error) {
+        console.error(error);
+        throw new trpcError({
+          code: "BAD_REQUEST",
+          message: "TEAM_ALREADY_EXISTS",
         });
-        if (!user) {
+      }
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ teamId: z.number(), name: z.string() }))
+    .mutation(async ({ ctx: { user }, input }) => {
+      const { userId } = user;
+      const { teamId, name } = input;
+      try {
+        const team = await db.query.teams.findFirst({
+          where: and(
+            eq(schema.teams.id, teamId),
+            eq(schema.teams.userId, userId)
+          ),
+        });
+
+        if (!team) {
           throw new trpcError({
-            code: "BAD_REQUEST",
+            code: "UNAUTHORIZED",
+            message: "You are not authorized to update this team",
           });
         }
+
+        await db
+          .update(schema.teams)
+          .set({
+            name,
+          })
+          .where(
+            and(eq(schema.teams.id, teamId), eq(schema.teams.userId, userId))
+          );
+
         return {
           success: true,
         };
       } catch (error) {
-        console.error(error);
-        return {
-          success: false,
-        };
+       throw new trpcError({code:"UNAUTHORIZED"})
       }
     }),
-  update: protectedProcedure
-    .input(z.object({ id: z.number(), name: z.string() }))
+
+  cancel: protectedProcedure
+    .input(z.object({ teamId: z.number() }))
     .mutation(async ({ ctx: { user }, input }) => {
       const { userId } = user;
-      const { id, name } = input;
-      db.update(schema.teams)
-        .set({
-          name,
-        })
-        .where(and(eq(schema.teams.id, id), eq(schema.teams.userId, userId)));
-      return {
-        success: true,
-      };
+      const { teamId } = input;
+      try {
+        const team = await db.query.teams.findFirst({
+          where: and(
+            eq(schema.teams.id, teamId),
+            eq(schema.teams.userId, userId)
+          ),
+        });
+
+        if (!team) {
+          console.log("should thorw error")
+          throw new trpcError({
+            code: "BAD_REQUEST"
+          });
+        }
+
+        await db
+          .delete(schema.teams)
+          .where(
+            and(eq(schema.teams.id, teamId), eq(schema.teams.userId, userId))
+          );
+
+        return {
+          success: true,
+        };
+      } catch (error) {
+        throw new trpcError({code :"BAD_REQUEST"})
+      }
     }),
 });

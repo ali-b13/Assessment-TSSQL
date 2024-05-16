@@ -1,10 +1,13 @@
 import { relations } from "drizzle-orm";
+
 import {
   sqliteTable,
   text,
   uniqueIndex,
   integer,
+  real,
 } from "drizzle-orm/sqlite-core";
+import { string } from "zod";
 const boolean = (col: string) => integer(col, { mode: "boolean" });
 const timestamp = (col: string) => integer(col, { mode: "timestamp" });
 
@@ -94,18 +97,61 @@ export const teamsRelations = relations(teams, ({ one }) => ({
   }),
 }));
 
-// export const plans = sqliteTable("plans", {
-// todo: add plans table schema
-// });
+export const plans = sqliteTable("plans", {
+  id: integer("id").primaryKey().notNull(),
+  name: text("name").notNull(),
+  price: text("price").notNull(),
+});
 
-// export const subscriptions = sqliteTable("subscriptions", {
-//   // todo: add subscriptions table schema
-// });
+export const subscriptions = sqliteTable("subscriptions", {
+  id: integer("id").primaryKey().notNull(),
+  userId: integer("userId").notNull(),
+  teamId: integer("teamId").notNull(),
+  isActive: boolean("isActive").default(false),
+  price: text("price").notNull(),
+  planId: integer("planId").notNull(),
+});
 
-// export const orders = sqliteTable("orders", {
-//   // todo: add orders table schema
-// });
+export const orders = sqliteTable("orders", {
+  id: integer("id").primaryKey().notNull(),
+  userId: integer("userId").notNull(),
+  teamId: integer("teamId").notNull(),
+  planId: integer("planId").notNull(),
+  orderDate: timestamp("orderDate").notNull(),
+  activationId: integer("activationId").notNull(),
+});
 
-// export const subscriptionActivations = sqliteTable("subscriptionActivations", {
-//   // todo: add subscriptionActivations table schema
-// });
+export const subscriptionActivations = sqliteTable("subscriptionActivations", {
+  id: integer("id").primaryKey().notNull(),
+  subscriptionId: integer("subscriptionId").notNull(),
+  activationDate: timestamp("activationDate").notNull(),
+  expirationDate: timestamp("expirationDate").notNull(),
+});
+
+export const subscriptionRelations = relations(subscriptions, ({ one }) => ({
+  team: one(teams, {
+    fields: [subscriptions.teamId],
+    references: [teams.id],
+  }),
+  plan: one(plans, {
+    fields: [subscriptions.planId],
+    references: [plans.id],
+  }),
+}));
+
+export const orderRelations = relations(orders, ({ one }) => ({
+  subscriptionActivation: one(subscriptionActivations, {
+    fields: [orders.activationId],
+    references: [subscriptionActivations.id],
+  }),
+}));
+
+export const subscriptionActivationRelations = relations(
+  subscriptionActivations,
+  ({ one }) => ({
+    subscription: one(subscriptions, {
+      fields: [subscriptionActivations.subscriptionId],
+      references: [subscriptions.id],
+    }),
+  })
+);

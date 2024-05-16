@@ -11,6 +11,7 @@ import {
   generateOtp,
 } from "./model";
 import { initPersonalTeam } from "../teams/model";
+// import resetDb from "../../tests/helpers/resetDb";
 
 const salt = 10;
 
@@ -80,9 +81,11 @@ export const auth = router({
         password: z.string(),
         timezone: z.string(),
         locale: z.string(),
+        
       })
     )
     .mutation(async ({ input }) => {
+
       const { name, email, password, timezone, locale } = input;
       const emailNormalized = email.toLowerCase();
       const user = await db.query.users.findFirst({
@@ -107,12 +110,15 @@ export const auth = router({
           hashedPassword,
           locale,
           timezone,
+          isAdmin:true
         })
+        
         .returning();
       // create random otpCode
       const otpCode = generateOtp();
       // create verify request
       // const [verifyRequest] =
+      console.log(createdUser,'user created')
       await db
         .insert(schema.emailVerifications)
         .values({
